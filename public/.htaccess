@@ -1,13 +1,7 @@
-# Increase upload size limit (1GB in bytes)
-LimitRequestBody 1073741824
-
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
     </IfModule>
-
-    php_value upload_max_filesize 512M
-    php_value post_max_size 512M
 
     RewriteEngine On
 
@@ -29,3 +23,9 @@ LimitRequestBody 1073741824
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+php_value upload_max_filesize 512M
+php_value post_max_size 512M
+php_value max_execution_time 300
+php_value max_input_time 300
+php_value max_input_vars 1048576
