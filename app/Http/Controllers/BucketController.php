@@ -411,18 +411,81 @@ class BucketController extends Controller
                 return $this->errorResponse('NoSuchKey', 'The specified key does not exist.', 404, $path);
             }
 
-            $filePath = Storage::disk('public')->path($fullPath);
-            $mimeType = Storage::disk('public')->mimeType($fullPath) ?: 'application/octet-stream';
-            $fileSize = Storage::disk('public')->size($fullPath);
-            $lastModified = Storage::disk('public')->lastModified($fullPath);
+            // Get all files in the bucket
+            $allFiles = Storage::disk('public')->allFiles($bucketPath);
 
-            return response()->file($filePath, [
-                'Content-Type' => $mimeType,
-                'Content-Length' => (string) $fileSize,
-                'Last-Modified' => gmdate('D, d M Y H:i:s \G\M\T', $lastModified),
-                'ETag' => '"' . md5_file($filePath) . '"',
-                'x-amz-request-id' => Str::uuid()->toString(),
-            ]);
+            // Filter by prefix
+            $files = [];
+            $commonPrefixes = [];
+            $seenPrefixes = [];
+
+            foreach ($allFiles as $file) {
+                // Get relative path from bucket root (remove bucket name)
+                $relativePath = str_replace($bucketPath . '/', '', $file);
+
+                // Skip if doesn't match prefix
+                if ($prefix && !str_starts_with($relativePath, $prefix)) {
+                    continue;
+                }
+
+                // Skip if before marker
+                if ($marker && $relativePath <= $marker) {
+                    continue;
+                }
+
+                // Check if this path is already covered by a common prefix
+                $isUnderPrefix = false;
+                foreach ($seenPrefixes as $seenPrefix) {
+                    if (str_starts_with($relativePath, $seenPrefix)) {
+                        $isUnderPrefix = true;
+                        break;
+                    }
+                }
+
+                if ($isUnderPrefix) {
+                    continue; // Skip files under common prefixes
+                }
+
+                // If delimiter is set, check if we should treat as common prefix
+                if ($delimiter && str_contains($relativePath, $delimiter)) {
+                    // Find the position after the prefix
+                    $startPos = $prefix ? strlen($prefix) : 0;
+                    // Find the next delimiter after the prefix
+                    $delimiterPos = strpos($relativePath, $delimiter, $startPos);
+
+                    if ($delimiterPos !== false) {
+                        // Extract common prefix (everything up to and including the delimiter)
+                        $commonPrefix = substr($relativePath, 0, $delimiterPos + strlen($delimiter));
+
+                        if (!in_array($commonPrefix, $seenPrefixes)) {
+                            $seenPrefixes[] = $commonPrefix;
+                            $commonPrefixes[] = $commonPrefix;
+                        }
+                        continue; // Don't add as file, it's a prefix
+                    }
+                }
+
+                // Treat as file (no delimiter or no delimiter after prefix)
+                $files[] = [
+                    'Key' => $relativePath,
+                    'LastModified' => gmdate('Y-m-d\TH:i:s.000\Z', Storage::disk('public')->lastModified($file)),
+                    'ETag' => '"' . md5_file(Storage::disk('public')->path($file)) . '"',
+                    'Size' => Storage::disk('public')->size($file),
+                    'StorageClass' => 'STANDARD',
+                ];
+
+                if (count($files) + count($commonPrefixes) >= $maxKeys) {
+                    break;
+                }
+            }
+
+            // Sort files and prefixes
+            usort($files, fn($a, $b) => strcmp($a['Key'], $b['Key']));
+            sort($commonPrefixes);
+
+            return $this->buildListResponse($bucket, $prefix, $delimiter, $files, $commonPrefixes, $marker, $maxKeys);
+
+
         } catch (\Exception $e) {
             return $this->errorResponse('InternalError', $e->getMessage(), 500);
         }
