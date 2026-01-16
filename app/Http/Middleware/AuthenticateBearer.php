@@ -15,6 +15,15 @@ class AuthenticateBearer
      */
     public function handle(Request $request, Closure $next): Response
     {
+        // Allow signed URLs to pass through (controller will verify signature)
+        $signature = $request->query('signature');
+        $expires = $request->query('expires');
+        
+        if ($signature && $expires) {
+            return $next($request);
+        }
+
+        // Otherwise, require bearer token authentication
         $authBearer = env('AUTH_BEARER');
 
         if (empty($authBearer)) {

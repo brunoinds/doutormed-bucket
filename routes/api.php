@@ -9,11 +9,7 @@ use Illuminate\Support\Facades\Route;
 
 
 
-Route::get('/hello', function () {
-    return response()->json([
-        'message' => 'Hello World'
-    ], 200);
-});
+Route::head('/buckets/{bucket}/{path}', [BucketController::class, 'head'])->where('path', '.*');
 
 // List bucket contents (GET /buckets/{bucket})
 Route::get('/buckets/{bucket}', [BucketController::class, 'list'])
@@ -38,6 +34,12 @@ Route::post('/buckets/{bucket}/{path}', [BucketController::class, 'put'])
 
 // Delete file (DELETE /buckets/{bucket}/{path}) - Requires authentication
 Route::delete('/buckets/{bucket}/{path}', [BucketController::class, 'delete'])
+    ->middleware('auth.bearer')
+    ->where('bucket', '[^/]+')
+    ->where('path', '.*');
+
+// Generate signed URL for upload (POST /buckets/{bucket}/{path}/signed-url) - Requires authentication
+Route::post('/buckets/{bucket}/{path}/signed-url', [BucketController::class, 'generateSignedUrl'])
     ->middleware('auth.bearer')
     ->where('bucket', '[^/]+')
     ->where('path', '.*');

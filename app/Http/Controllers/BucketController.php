@@ -5,21 +5,150 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\URL;
+use Carbon\Carbon;
 
 class BucketController extends Controller
 {
     /**
-     * Upload or put a file (POST/PUT)
-     * S3-compliant endpoint
+     * Generate a signed URL for uploading a file
+     * Returns a URL that can be used to upload directly from the front-end
      */
-    public function put(Request $request, string $bucket, string $path = '')
+    public function generateSignedUrl(Request $request, string $bucket, string $path = '')
     {
         try {
+            $request->validate([
+                'expires' => 'nullable|integer|min:1|max:604800', // Max 7 days in seconds
+            ]);
+
             // Normalize the path (remove leading/trailing slashes)
             $path = trim($path, '/');
 
             if (empty($path)) {
-                return $this->errorResponse('InvalidRequest', 'Path cannot be empty', 400);
+                return response()->json([
+                    'error' => 'Path cannot be empty'
+                ], 400);
+            }
+
+            // Default expiration: 1 hour (3600 seconds)
+            $expiresIn = $request->input('expires', 3600);
+            $expiresAt = Carbon::now()->addSeconds($expiresIn);
+
+            // Create the payload to sign
+            $payload = [
+                'bucket' => $bucket,
+                'path' => $path,
+                'expires' => $expiresAt->timestamp,
+            ];
+
+            // Generate signature using app key
+            $signature = $this->generateSignature($payload);
+
+            // Build the signed URL - encode path segments but preserve slashes
+            $pathSegments = explode('/', $path);
+            $encodedPath = implode('/', array_map('rawurlencode', $pathSegments));
+            $uploadUrl = URL::to("/api/buckets/{$bucket}/{$encodedPath}");
+            $signedUrl = $uploadUrl . '?' . http_build_query([
+                'signature' => $signature,
+                'expires' => $expiresAt->timestamp,
+            ]);
+
+            return response()->json([
+                'url' => $signedUrl,
+                'expires_at' => $expiresAt->toIso8601String(),
+                'expires_in' => $expiresIn,
+                'method' => 'PUT',
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'error' => 'Validation failed',
+                'messages' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Internal error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Generate signature for signed URL
+     */
+    private function generateSignature(array $payload): string
+    {
+        $appKey = config('app.key');
+        if (empty($appKey)) {
+            throw new \Exception('APP_KEY is not configured');
+        }
+
+        // Create a string representation of the payload
+        $data = json_encode($payload, JSON_UNESCAPED_SLASHES);
+
+        // Generate HMAC signature
+        $signature = hash_hmac('sha256', $data, $appKey);
+
+        return $signature;
+    }
+
+    /**
+     * Verify signature for signed URL
+     */
+    private function verifySignature(string $signature, array $payload): bool
+    {
+        try {
+            $expectedSignature = $this->generateSignature($payload);
+            return hash_equals($expectedSignature, $signature);
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Upload or put a file (POST/PUT)
+     * S3-compliant endpoint
+     * Accepts either Bearer token authentication or signed URL
+     */
+    public function put(Request $request, string $bucket, string $path = '')
+    {
+        try {
+            // Check if this is a signed URL request
+            $signature = $request->query('signature');
+            $expires = $request->query('expires');
+
+            if ($signature && $expires) {
+                // Verify signed URL
+                $expiresTimestamp = (int) $expires;
+
+                // Check if expired
+                if ($expiresTimestamp < time()) {
+                    return $this->errorResponse('ExpiredToken', 'The provided token has expired', 403);
+                }
+
+                // Normalize the path (remove leading/trailing slashes)
+                $path = trim($path, '/');
+
+                if (empty($path)) {
+                    return $this->errorResponse('InvalidRequest', 'Path cannot be empty', 400);
+                }
+
+                // Verify signature
+                $payload = [
+                    'bucket' => $bucket,
+                    'path' => $path,
+                    'expires' => $expiresTimestamp,
+                ];
+
+                if (!$this->verifySignature($signature, $payload)) {
+                    return $this->errorResponse('InvalidToken', 'The provided token is invalid', 403);
+                }
+            } else {
+                // Normalize the path (remove leading/trailing slashes)
+                $path = trim($path, '/');
+
+                if (empty($path)) {
+                    return $this->errorResponse('InvalidRequest', 'Path cannot be empty', 400);
+                }
             }
 
             // Full path includes bucket name: bucket-name/path/to/file
@@ -103,6 +232,43 @@ class BucketController extends Controller
                 'ETag' => '"' . md5_file($filePath) . '"',
                 'x-amz-request-id' => Str::uuid()->toString(),
             ]);
+        } catch (\Exception $e) {
+            return $this->errorResponse('InternalError', $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Check if an object exists (HEAD)
+     * S3-compliant endpoint - returns metadata without body
+     */
+    public function head(Request $request, string $bucket, string $path = '')
+    {
+        try {
+            $path = trim($path, '/');
+
+            if (empty($path)) {
+                return $this->errorResponse('InvalidRequest', 'Path cannot be empty', 400);
+            }
+
+            // Full path includes bucket name: bucket-name/path/to/file
+            $fullPath = 'buckets/' . $bucket . '/' . $path;
+
+            if (!Storage::disk('public')->exists($fullPath)) {
+                return $this->errorResponse('NoSuchKey', 'The specified key does not exist.', 404, $path);
+            }
+
+            $filePath = Storage::disk('public')->path($fullPath);
+            $mimeType = Storage::disk('public')->mimeType($fullPath) ?: 'application/octet-stream';
+            $fileSize = Storage::disk('public')->size($fullPath);
+            $lastModified = Storage::disk('public')->lastModified($fullPath);
+
+            // S3-compliant HEAD response - headers only, no body
+            return response('', 200)
+                ->header('Content-Type', $mimeType)
+                ->header('Content-Length', (string) $fileSize)
+                ->header('Last-Modified', gmdate('D, d M Y H:i:s \G\M\T', $lastModified))
+                ->header('ETag', '"' . md5_file($filePath) . '"')
+                ->header('x-amz-request-id', Str::uuid()->toString());
         } catch (\Exception $e) {
             return $this->errorResponse('InternalError', $e->getMessage(), 500);
         }
