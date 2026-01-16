@@ -23,7 +23,7 @@ class BucketController extends Controller
             }
 
             // Full path includes bucket name: bucket-name/path/to/file
-            $fullPath = $bucket . '/' . $path;
+            $fullPath = 'buckets/' . $bucket . '/' . $path;
 
             // Create directory structure if it doesn't exist
             $directory = dirname($fullPath);
@@ -85,7 +85,7 @@ class BucketController extends Controller
             }
 
             // Full path includes bucket name: bucket-name/path/to/file
-            $fullPath = $bucket . '/' . $path;
+            $fullPath = 'buckets/' . $bucket . '/' . $path;
 
             if (!Storage::disk('public')->exists($fullPath)) {
                 return $this->errorResponse('NoSuchKey', 'The specified key does not exist.', 404, $path);
@@ -121,7 +121,7 @@ class BucketController extends Controller
             }
 
             // Full path includes bucket name: bucket-name/path/to/file
-            $fullPath = $bucket . '/' . $path;
+            $fullPath = 'buckets/' . $bucket . '/' . $path;
 
             if (!Storage::disk('public')->exists($fullPath)) {
                 return $this->errorResponse('NoSuchKey', 'The specified key does not exist.', 404, $path);
@@ -149,7 +149,7 @@ class BucketController extends Controller
             $maxKeys = min((int) $request->query('max-keys', 1000), 1000);
 
             // Bucket path includes bucket name
-            $bucketPath = $bucket;
+            $bucketPath = 'buckets/' . $bucket;
 
             // Get all files in the bucket
             $allFiles = Storage::disk('public')->allFiles($bucketPath);
