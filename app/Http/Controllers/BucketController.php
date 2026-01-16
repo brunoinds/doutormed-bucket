@@ -112,6 +112,13 @@ class BucketController extends Controller
      */
     public function put(Request $request, string $bucket, string $path = '')
     {
+        set_time_limit(0);
+        ini_set('memory_limit', '1G');
+        ini_set('upload_max_filesize', '512M');
+        ini_set('post_max_size', '512M');
+        ini_set('max_execution_time', '300');
+        ini_set('max_input_time', '300');
+        ini_set('max_input_vars', '1048576');
         try {
             // Check if this is a signed URL request
             $signature = $request->query('signature');

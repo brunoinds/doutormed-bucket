@@ -3,6 +3,8 @@
 use App\Http\Controllers\BucketController;
 use Illuminate\Support\Facades\Route;
 
+
+
 // S3-compliant bucket operations
 // Routes support paths like: /buckets/{bucket}/{path...}
 // Example: /buckets/my-bucket/path/to/file.mp4
