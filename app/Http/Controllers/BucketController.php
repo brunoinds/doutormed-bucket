@@ -421,7 +421,7 @@ class BucketController extends Controller
 
             foreach ($allFiles as $file) {
                 // Get relative path from bucket root (remove bucket name)
-                $relativePath = str_replace($bucketPath . '/', '', $file);
+                $relativePath = str_replace($fullPath . '/', '', $file);
 
                 // Skip if doesn't match prefix
                 if ($prefix && !str_starts_with($relativePath, $prefix)) {
