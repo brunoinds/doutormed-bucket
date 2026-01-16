@@ -37,7 +37,7 @@ class AuthenticateBearer
             ], 500);
         }
 
-        $token = $request->header('Authorization');
+        /* $token = $request->header('Authorization');
 
 
         Log::info('authBearer: ' . $authBearer);
@@ -51,7 +51,7 @@ class AuthenticateBearer
                     'Message' => 'The provided token is invalid',
                 ]
             ], 403);
-        }
+        } */
 
         return $next($request);
     }
