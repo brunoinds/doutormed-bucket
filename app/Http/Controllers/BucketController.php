@@ -110,7 +110,7 @@ class BucketController extends Controller
      * S3-compliant endpoint
      * Accepts either Bearer token authentication or signed URL
      */
-    public function put(Request $request, string $bucket, string $path = '')
+    /* public function put(Request $request, string $bucket, string $path = '')
     {
         set_time_limit(0);
         ini_set('memory_limit', '1G');
@@ -196,6 +196,78 @@ class BucketController extends Controller
             // Get file info
             $filePath = Storage::disk('public')->path($fullPath);
 
+            // S3-compliant response
+            return response('', 200)
+                ->header('ETag', '"' . md5_file($filePath) . '"')
+                ->header('Content-Length', '0')
+                ->header('x-amz-request-id', Str::uuid()->toString());
+        } catch (\Exception $e) {
+            return $this->errorResponse('InternalError', $e->getMessage(), 500);
+        }
+    } */
+
+    public function put(Request $request, string $bucket, string $path = '')
+    {
+        try {
+            // Check if this is a signed URL request
+            $signature = $request->query('signature');
+            $expires = $request->query('expires');
+
+            if ($signature && $expires) {
+                // Verify signed URL
+                $expiresTimestamp = (int) $expires;
+
+                // Check if expired
+                if ($expiresTimestamp < time()) {
+                    return $this->errorResponse('ExpiredToken', 'The provided token has expired', 403);
+                }
+
+                // Normalize the path (remove leading/trailing slashes)
+                $path = trim($path, '/');
+
+                if (empty($path)) {
+                    return $this->errorResponse('InvalidRequest', 'Path cannot be empty', 400);
+                }
+
+                // Verify signature
+                $payload = [
+                    'bucket' => $bucket,
+                    'path' => $path,
+                    'expires' => $expiresTimestamp,
+                ];
+
+                if (!$this->verifySignature($signature, $payload)) {
+                    return $this->errorResponse('InvalidToken', 'The provided token is invalid', 403);
+                }
+            } else {
+                // Normalize the path (remove leading/trailing slashes)
+                $path = trim($path, '/');
+
+                if (empty($path)) {
+                    return $this->errorResponse('InvalidRequest', 'Path cannot be empty', 400);
+                }
+            }
+
+            // Full path includes bucket name: bucket-name/path/to/file
+            $fullPath = 'buckets/' . $bucket . '/' . $path;
+
+            // Create directory structure if it doesn't exist
+            $directory = dirname($fullPath);
+            if ($directory !== '.' && $directory !== '') {
+                Storage::disk('public')->makeDirectory($directory);
+            }
+
+            // Get file from Laravel->file from request:
+            $file = $request->file('file');
+
+            if ($file === null) {
+                return $this->errorResponse('InternalError', 'Failed to get file from request', 500);
+            }
+
+            // Stream copy
+            $file->move(Storage::disk('public')->path($fullPath));
+
+            $filePath = Storage::disk('public')->path($fullPath);
             // S3-compliant response
             return response('', 200)
                 ->header('ETag', '"' . md5_file($filePath) . '"')
