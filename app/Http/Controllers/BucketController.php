@@ -208,7 +208,13 @@ class BucketController extends Controller
 
     public function put(Request $request, string $bucket, string $path = '')
     {
-        Log::info('put request: ', ['request' => $request->all()]);
+        set_time_limit(0);
+        ini_set('memory_limit', '1G');
+        ini_set('upload_max_filesize', '512M');
+        ini_set('post_max_size', '512M');
+        ini_set('max_execution_time', '300');
+        ini_set('max_input_time', '300');
+        ini_set('max_input_vars', '1048576');
         try {
             // Check if this is a signed URL request
             $signature = $request->query('signature');
@@ -258,17 +264,34 @@ class BucketController extends Controller
                 Storage::disk('public')->makeDirectory($directory);
             }
 
-            // Get file from Laravel->file from request:
-            $file = $request->file('file');
+            // Use streaming for better performance
+            $stream = fopen('php://input', 'rb');
+            if ($stream === false) {
+                return $this->errorResponse('InternalError', 'Failed to open input stream', 500);
+            }
 
-            if ($file === null) {
-                return $this->errorResponse('InternalError', 'Failed to get file from request', 500);
+            // Write stream to file
+            $destination = Storage::disk('public')->path($fullPath);
+            $destinationDir = dirname($destination);
+            if (!is_dir($destinationDir)) {
+                mkdir($destinationDir, 0755, true);
+            }
+
+            $destinationStream = fopen($destination, 'wb');
+            if ($destinationStream === false) {
+                fclose($stream);
+                return $this->errorResponse('InternalError', 'Failed to create destination file', 500);
             }
 
             // Stream copy
-            $file->move(Storage::disk('public')->path($fullPath));
+            stream_copy_to_stream($stream, $destinationStream);
 
+            fclose($stream);
+            fclose($destinationStream);
+
+            // Get file info
             $filePath = Storage::disk('public')->path($fullPath);
+
             // S3-compliant response
             return response('', 200)
                 ->header('ETag', '"' . md5_file($filePath) . '"')
