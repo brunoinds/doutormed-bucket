@@ -12,6 +12,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->prepend(\BeyondCode\ServerTiming\Middleware\ServerTimingMiddleware::class);
+        
         $middleware->alias([
             'auth.bearer' => \App\Http\Middleware\AuthenticateBearer::class,
         ]);
