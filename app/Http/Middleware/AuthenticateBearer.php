@@ -37,7 +37,7 @@ class AuthenticateBearer
             ], 500);
         }
 
-        $token = $request->bearerToken();
+        $token = $request->header('Authorization');
 
 
         Log::info('authBearer: ' . $authBearer);
