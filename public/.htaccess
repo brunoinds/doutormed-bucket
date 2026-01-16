@@ -13,6 +13,24 @@
     RewriteCond %{HTTP:x-xsrf-token} .
     RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
 
+    # Serve files directly from storage/buckets if they exist (for better performance)
+    # Handle /api/buckets/... requests (Laravel API routes)
+    # Request: /api/buckets/my-bucket/path/to/file.mp4
+    # File: storage/app/buckets/my-bucket/path/to/file.mp4
+    RewriteCond %{REQUEST_URI} ^/api/buckets/(.+)$
+    RewriteCond %{REQUEST_METHOD} ^GET$
+    RewriteCond %{DOCUMENT_ROOT}/../storage/app/buckets/%1 -f
+    RewriteRule ^api/buckets/(.+)$ ../storage/app/buckets/$1 [L]
+
+    # Serve files directly from storage/buckets if they exist (for better performance)
+    # Handle /buckets/... requests (direct requests without /api prefix)
+    # Request: /buckets/my-bucket/path/to/file.mp4
+    # File: storage/app/buckets/my-bucket/path/to/file.mp4
+    RewriteCond %{REQUEST_URI} ^/buckets/(.+)$
+    RewriteCond %{REQUEST_METHOD} ^GET$
+    RewriteCond %{DOCUMENT_ROOT}/../storage/app/buckets/%1 -f
+    RewriteRule ^buckets/(.+)$ ../storage/app/buckets/$1 [L]
+
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
