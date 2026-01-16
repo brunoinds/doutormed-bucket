@@ -7,6 +7,12 @@ use Illuminate\Support\Facades\Route;
 // Routes support paths like: /buckets/{bucket}/{path...}
 // Example: /buckets/my-bucket/path/to/file.mp4
 
+
+
+Route::get('/', function () {
+    return 'Welcome to the S3 Storage Clone API';
+});
+
 // List bucket contents (GET /buckets/{bucket})
 Route::get('/buckets/{bucket}', [BucketController::class, 'list'])
     ->where('bucket', '[^/]+');
