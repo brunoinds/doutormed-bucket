@@ -60,6 +60,15 @@ return [
             'report' => false,
         ],
 
+        'buckets' => [
+            'driver' => 'local',
+            'root' => storage_path('app/buckets'),
+            'url' => rtrim(env('APP_URL'), '/').'/buckets',
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
     ],
 
     /*
