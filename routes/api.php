@@ -15,6 +15,13 @@ Route::match(['HEAD'], '/buckets/{bucket}/{path}', [BucketController::class, 'he
 Route::get('/buckets/{bucket}', [BucketController::class, 'listBucket'])
     ->where('bucket', '[^/]+');
 
+
+
+Route::post('/buckets/{bucket}/{path}/signed-url', [BucketController::class, 'generateSignedUrl'])
+    ->middleware('auth.bearer')
+    ->where('bucket', '[^/]+')
+    ->where('path', '.*');
+
 Route::get('/buckets/{bucket}/{path}', [BucketController::class, 'listPrefix'])
     ->where('bucket', '[^/]+')
     ->where('path', '.*');
@@ -39,7 +46,4 @@ Route::delete('/buckets/{bucket}/{path}', [BucketController::class, 'delete'])
     ->where('path', '.*');
 
 // Generate signed URL for upload (POST /buckets/{bucket}/{path}/signed-url) - Requires authentication
-Route::post('/buckets/{bucket}/{path}/signed-url', [BucketController::class, 'generateSignedUrl'])
-    ->middleware('auth.bearer')
-    ->where('bucket', '[^/]+')
-    ->where('path', '.*');
+
