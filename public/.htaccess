@@ -6,6 +6,9 @@ LimitRequestBody 1073741824
         Options -MultiViews -Indexes
     </IfModule>
 
+    php_value upload_max_filesize 512M
+    php_value post_max_size 512M
+
     RewriteEngine On
 
     # Handle Authorization Header
