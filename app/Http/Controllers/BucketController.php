@@ -21,6 +21,9 @@ class BucketController extends Controller
                 'expires' => 'nullable|integer|min:1|max:604800', // Max 7 days in seconds
             ]);
 
+            Log::info('generateSignedUrl: ', ['bucket' => $bucket, 'path' => $path]);
+            Log::info('request: ', ['request' => $request->all()]);
+
             // Normalize the path (remove leading/trailing slashes)
             $path = trim($path, '/');
 
