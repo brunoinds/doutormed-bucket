@@ -412,7 +412,7 @@ class BucketController extends Controller
             }
 
             // Get all files in the bucket
-            $allFiles = Storage::disk('public')->allFiles($bucketPath);
+            $allFiles = Storage::disk('public')->allFiles($fullPath);
 
             // Filter by prefix
             $files = [];
