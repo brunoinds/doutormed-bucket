@@ -414,6 +414,11 @@ class BucketController extends Controller
             // Get all files in the bucket
             $allFiles = Storage::disk('public')->allFiles($fullPath);
 
+            $prefix = trim($request->query('prefix', ''), '/');
+            $delimiter = $request->query('delimiter', '/');
+            $marker = trim($request->query('marker', ''), '/');
+            $maxKeys = min((int) $request->query('max-keys', 1000), 1000);
+
             // Filter by prefix
             $files = [];
             $commonPrefixes = [];
