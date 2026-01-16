@@ -9,8 +9,10 @@ use Illuminate\Support\Facades\Route;
 
 
 
-Route::get('/', function () {
-    return 'Welcome to the S3 Storage Clone API';
+Route::get('/hello', function () {
+    return response()->json([
+        'message' => 'Hello World'
+    ], 200);
 });
 
 // List bucket contents (GET /buckets/{bucket})
