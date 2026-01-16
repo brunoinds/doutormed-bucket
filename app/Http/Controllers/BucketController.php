@@ -271,6 +271,68 @@ class BucketController extends Controller
     }
 
     /**
+     * Show the file uploader page
+     */
+    public function showUploader()
+    {
+        return view('uploader');
+    }
+
+    /**
+     * Handle file upload from web form
+     */
+    public function uploadFile(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file',
+            'bucket' => 'required|string|max:255',
+            'path' => 'nullable|string|max:1000',
+        ]);
+
+        try {
+            $file = $request->file('file');
+            $bucket = $request->input('bucket');
+            $path = $request->input('path', '');
+
+            // Normalize the path
+            $path = trim($path, '/');
+
+            // If no path provided, use the original filename
+            if (empty($path)) {
+                $path = $file->getClientOriginalName();
+            }
+
+            // Full path includes bucket name: bucket-name/path/to/file
+            $fullPath = 'buckets/' . $bucket . '/' . $path;
+
+            // Create directory structure if it doesn't exist
+            $directory = dirname($fullPath);
+            if ($directory !== '.' && $directory !== '') {
+                Storage::disk('public')->makeDirectory($directory);
+            }
+
+            // Store the file using Storage facade
+            $storedPath = Storage::disk('public')->putFileAs(
+                dirname($fullPath) === '.' ? '' : dirname($fullPath),
+                $file,
+                basename($fullPath)
+            );
+
+            if ($storedPath) {
+                return redirect()->route('uploader')
+                    ->with('success', 'File uploaded successfully!')
+                    ->with('file_path', $storedPath);
+            } else {
+                return redirect()->route('uploader')
+                    ->with('error', 'Failed to upload file.');
+            }
+        } catch (\Exception $e) {
+            return redirect()->route('uploader')
+                ->with('error', 'Error: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Generate S3-compliant error response
      */
     private function errorResponse(string $code, string $message, int $statusCode, ?string $key = null)
