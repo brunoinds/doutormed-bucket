@@ -306,7 +306,7 @@ class BucketController extends Controller
     /**
      * List files in a bucket (GET with prefix)
      */
-    public function list(Request $request, string $bucket)
+    public function listBucket(Request $request, string $bucket)
     {
         try {
             $prefix = trim($request->query('prefix', ''), '/');
@@ -390,6 +390,39 @@ class BucketController extends Controller
             sort($commonPrefixes);
 
             return $this->buildListResponse($bucket, $prefix, $delimiter, $files, $commonPrefixes, $marker, $maxKeys);
+        } catch (\Exception $e) {
+            return $this->errorResponse('InternalError', $e->getMessage(), 500);
+        }
+    }
+
+    public function listPrefix(Request $request, string $bucket, string $path = '')
+    {
+        try {
+            $path = trim($path, '/');
+
+            if (empty($path)) {
+                return $this->errorResponse('InvalidRequest', 'Path cannot be empty', 400);
+            }
+
+            // Full path includes bucket name: bucket-name/path/to/file
+            $fullPath = 'buckets/' . $bucket . '/' . $path;
+
+            if (!Storage::disk('public')->exists($fullPath)) {
+                return $this->errorResponse('NoSuchKey', 'The specified key does not exist.', 404, $path);
+            }
+
+            $filePath = Storage::disk('public')->path($fullPath);
+            $mimeType = Storage::disk('public')->mimeType($fullPath) ?: 'application/octet-stream';
+            $fileSize = Storage::disk('public')->size($fullPath);
+            $lastModified = Storage::disk('public')->lastModified($fullPath);
+
+            return response()->file($filePath, [
+                'Content-Type' => $mimeType,
+                'Content-Length' => (string) $fileSize,
+                'Last-Modified' => gmdate('D, d M Y H:i:s \G\M\T', $lastModified),
+                'ETag' => '"' . md5_file($filePath) . '"',
+                'x-amz-request-id' => Str::uuid()->toString(),
+            ]);
         } catch (\Exception $e) {
             return $this->errorResponse('InternalError', $e->getMessage(), 500);
         }

@@ -12,13 +12,13 @@ use Illuminate\Support\Facades\Route;
 Route::match(['HEAD'], '/buckets/{bucket}/{path}', [BucketController::class, 'head'])->where('path', '.*');
 
 // List bucket contents (GET /buckets/{bucket})
-Route::get('/buckets/{bucket}', [BucketController::class, 'list'])
+Route::get('/buckets/{bucket}', [BucketController::class, 'listBucket'])
     ->where('bucket', '[^/]+');
 
-// Get file (GET /buckets/{bucket}/{path})
-Route::get('/buckets/{bucket}/{path}', [BucketController::class, 'get'])
+Route::get('/buckets/{bucket}/{path}', [BucketController::class, 'listPrefix'])
     ->where('bucket', '[^/]+')
     ->where('path', '.*');
+
 
 // Upload/Put file (PUT /buckets/{bucket}/{path}) - Requires authentication
 Route::put('/buckets/{bucket}/{path}', [BucketController::class, 'put'])
