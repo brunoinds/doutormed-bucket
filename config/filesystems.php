@@ -62,7 +62,7 @@ return [
 
         'buckets' => [
             'driver' => 'local',
-            'root' => storage_path('app/buckets'),
+            'root' => storage_path('app/public') . '/buckets',
             'url' => rtrim(env('APP_URL'), '/').'/buckets',
             'visibility' => 'public',
             'throw' => false,

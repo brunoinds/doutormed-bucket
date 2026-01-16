@@ -13,16 +13,6 @@
     RewriteCond %{HTTP:x-xsrf-token} .
     RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
 
-
-    # Serve files directly from storage/buckets if they exist (for better performance)
-    # Handle /buckets/... requests (direct requests without /api prefix)
-    # Request: /buckets/my-bucket/path/to/file.mp4
-    # File: storage/app/buckets/my-bucket/path/to/file.mp4 (via symlink)
-    RewriteCond %{REQUEST_URI} ^/buckets/(.+)$
-    RewriteCond %{REQUEST_METHOD} ^GET$
-    RewriteCond %{DOCUMENT_ROOT}/buckets/%1 -f
-    RewriteRule ^buckets/(.+)$ buckets/$1 [L]
-
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$

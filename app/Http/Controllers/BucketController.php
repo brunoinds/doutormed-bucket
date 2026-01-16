@@ -28,7 +28,7 @@ class BucketController extends Controller
             // Create directory structure if it doesn't exist
             $directory = dirname($fullPath);
             if ($directory !== '.' && $directory !== '') {
-                Storage::disk('buckets')->makeDirectory($directory);
+                Storage::disk('public')->makeDirectory($directory);
             }
 
             // Use streaming for better performance
@@ -38,7 +38,7 @@ class BucketController extends Controller
             }
 
             // Write stream to file
-            $destination = Storage::disk('buckets')->path($fullPath);
+            $destination = Storage::disk('public')->path($fullPath);
             $destinationDir = dirname($destination);
             if (!is_dir($destinationDir)) {
                 mkdir($destinationDir, 0755, true);
@@ -57,7 +57,7 @@ class BucketController extends Controller
             fclose($destinationStream);
 
             // Get file info
-            $filePath = Storage::disk('buckets')->path($fullPath);
+            $filePath = Storage::disk('public')->path($fullPath);
 
             // S3-compliant response
             return response('', 200)
@@ -87,14 +87,14 @@ class BucketController extends Controller
             // Full path includes bucket name: bucket-name/path/to/file
             $fullPath = $bucket . '/' . $path;
 
-            if (!Storage::disk('buckets')->exists($fullPath)) {
+            if (!Storage::disk('public')->exists($fullPath)) {
                 return $this->errorResponse('NoSuchKey', 'The specified key does not exist.', 404, $path);
             }
 
-            $filePath = Storage::disk('buckets')->path($fullPath);
-            $mimeType = Storage::disk('buckets')->mimeType($fullPath) ?: 'application/octet-stream';
-            $fileSize = Storage::disk('buckets')->size($fullPath);
-            $lastModified = Storage::disk('buckets')->lastModified($fullPath);
+            $filePath = Storage::disk('public')->path($fullPath);
+            $mimeType = Storage::disk('public')->mimeType($fullPath) ?: 'application/octet-stream';
+            $fileSize = Storage::disk('public')->size($fullPath);
+            $lastModified = Storage::disk('public')->lastModified($fullPath);
 
             return response()->file($filePath, [
                 'Content-Type' => $mimeType,
@@ -123,11 +123,11 @@ class BucketController extends Controller
             // Full path includes bucket name: bucket-name/path/to/file
             $fullPath = $bucket . '/' . $path;
 
-            if (!Storage::disk('buckets')->exists($fullPath)) {
+            if (!Storage::disk('public')->exists($fullPath)) {
                 return $this->errorResponse('NoSuchKey', 'The specified key does not exist.', 404, $path);
             }
 
-            Storage::disk('buckets')->delete($fullPath);
+            Storage::disk('public')->delete($fullPath);
 
             // S3-compliant response
             return response('', 204)
@@ -152,7 +152,7 @@ class BucketController extends Controller
             $bucketPath = $bucket;
 
             // Get all files in the bucket
-            $allFiles = Storage::disk('buckets')->allFiles($bucketPath);
+            $allFiles = Storage::disk('public')->allFiles($bucketPath);
 
             // Filter by prefix
             $files = [];
@@ -208,9 +208,9 @@ class BucketController extends Controller
                 // Treat as file (no delimiter or no delimiter after prefix)
                 $files[] = [
                     'Key' => $relativePath,
-                    'LastModified' => gmdate('Y-m-d\TH:i:s.000\Z', Storage::disk('buckets')->lastModified($file)),
-                    'ETag' => '"' . md5_file(Storage::disk('buckets')->path($file)) . '"',
-                    'Size' => Storage::disk('buckets')->size($file),
+                    'LastModified' => gmdate('Y-m-d\TH:i:s.000\Z', Storage::disk('public')->lastModified($file)),
+                    'ETag' => '"' . md5_file(Storage::disk('public')->path($file)) . '"',
+                    'Size' => Storage::disk('public')->size($file),
                     'StorageClass' => 'STANDARD',
                 ];
 
