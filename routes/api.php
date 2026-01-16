@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Route;
 
 
 
-Route::head('/buckets/{bucket}/{path}', [BucketController::class, 'head'])->where('path', '.*');
+Route::match(['HEAD'], '/buckets/{bucket}/{path}', [BucketController::class, 'head'])->where('path', '.*');
 
 // List bucket contents (GET /buckets/{bucket})
 Route::get('/buckets/{bucket}', [BucketController::class, 'list'])
