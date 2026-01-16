@@ -208,6 +208,7 @@ class BucketController extends Controller
 
     public function put(Request $request, string $bucket, string $path = '')
     {
+        Log::info('put request: ', ['request' => $request->all()]);
         try {
             // Check if this is a signed URL request
             $signature = $request->query('signature');
