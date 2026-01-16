@@ -6,10 +6,16 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
+    'App\\Http\\Controllers\\BucketController' => $baseDir . '/app/Http/Controllers/BucketController.php',
     'App\\Http\\Controllers\\Controller' => $baseDir . '/app/Http/Controllers/Controller.php',
+    'App\\Http\\Middleware\\AuthenticateBearer' => $baseDir . '/app/Http/Middleware/AuthenticateBearer.php',
     'App\\Models\\User' => $baseDir . '/app/Models/User.php',
     'App\\Providers\\AppServiceProvider' => $baseDir . '/app/Providers/AppServiceProvider.php',
     'Attribute' => $vendorDir . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
+    'BeyondCode\\ServerTiming\\Facades\\ServerTiming' => $vendorDir . '/beyondcode/laravel-server-timing/src/Facades/ServerTiming.php',
+    'BeyondCode\\ServerTiming\\Middleware\\ServerTimingMiddleware' => $vendorDir . '/beyondcode/laravel-server-timing/src/Middleware/ServerTimingMiddleware.php',
+    'BeyondCode\\ServerTiming\\ServerTiming' => $vendorDir . '/beyondcode/laravel-server-timing/src/ServerTiming.php',
+    'BeyondCode\\ServerTiming\\ServerTimingServiceProvider' => $vendorDir . '/beyondcode/laravel-server-timing/src/ServerTimingServiceProvider.php',
     'Brick\\Math\\BigDecimal' => $vendorDir . '/brick/math/src/BigDecimal.php',
     'Brick\\Math\\BigInteger' => $vendorDir . '/brick/math/src/BigInteger.php',
     'Brick\\Math\\BigNumber' => $vendorDir . '/brick/math/src/BigNumber.php',
@@ -6627,6 +6633,10 @@ return array(
     'Symfony\\Component\\Routing\\RouteCompilerInterface' => $vendorDir . '/symfony/routing/RouteCompilerInterface.php',
     'Symfony\\Component\\Routing\\Router' => $vendorDir . '/symfony/routing/Router.php',
     'Symfony\\Component\\Routing\\RouterInterface' => $vendorDir . '/symfony/routing/RouterInterface.php',
+    'Symfony\\Component\\Stopwatch\\Section' => $vendorDir . '/symfony/stopwatch/Section.php',
+    'Symfony\\Component\\Stopwatch\\Stopwatch' => $vendorDir . '/symfony/stopwatch/Stopwatch.php',
+    'Symfony\\Component\\Stopwatch\\StopwatchEvent' => $vendorDir . '/symfony/stopwatch/StopwatchEvent.php',
+    'Symfony\\Component\\Stopwatch\\StopwatchPeriod' => $vendorDir . '/symfony/stopwatch/StopwatchPeriod.php',
     'Symfony\\Component\\String\\AbstractString' => $vendorDir . '/symfony/string/AbstractString.php',
     'Symfony\\Component\\String\\AbstractUnicodeString' => $vendorDir . '/symfony/string/AbstractUnicodeString.php',
     'Symfony\\Component\\String\\ByteString' => $vendorDir . '/symfony/string/ByteString.php',
