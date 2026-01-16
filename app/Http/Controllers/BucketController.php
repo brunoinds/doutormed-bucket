@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\URL;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class BucketController extends Controller
 {
@@ -20,9 +21,6 @@ class BucketController extends Controller
             $request->validate([
                 'expires' => 'nullable|integer|min:1|max:604800', // Max 7 days in seconds
             ]);
-
-            Log::info('generateSignedUrl: ', ['bucket' => $bucket, 'path' => $path]);
-            Log::info('request: ', ['request' => $request->all()]);
 
             // Normalize the path (remove leading/trailing slashes)
             $path = trim($path, '/');
