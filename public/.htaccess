@@ -1,3 +1,6 @@
+# Increase upload size limit (1GB in bytes)
+LimitRequestBody 1073741824
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
